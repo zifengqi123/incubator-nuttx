@@ -448,4 +448,61 @@ ssize_t up_progmem_write(size_t addr, const void *buf, size_t count)
   return written;
 }
 
+
+ssize_t up_progmem_read(size_t addr, FAR void *buf, size_t count)
+{
+  uint16_t *hword = (uint16_t *)buf;
+  size_t read = count;
+
+  /* STM32 requires half-word access */
+
+  if (count & 1)
+    {
+      return -EINVAL;
+    }
+
+  /* Check for valid address range */
+
+  if (addr >= STM32_FLASH_BASE)
+    {
+      addr -= STM32_FLASH_BASE;
+    }
+
+  if ((addr + count) > STM32_FLASH_SIZE)
+    {
+      return -EFAULT;
+    }
+
+  sem_lock();
+
+  /* Get flash ready and begin flashing */
+
+  flash_unlock();
+
+#if defined(CONFIG_STM32_FLASH_WORKAROUND_DATA_CACHE_CORRUPTION_ON_RWW)
+  data_cache_disable();
+#endif
+
+  // modifyreg32(STM32_FLASH_CR, 0, FLASH_CR_PG);
+
+  /* TODO: implement up_progmem_write() to support other sizes than 16-bits */
+
+  // modifyreg32(STM32_FLASH_CR, FLASH_CR_PSIZE_MASK, FLASH_CR_PSIZE_X16);
+
+  for (addr += STM32_FLASH_BASE; count; count -= 2, hword++, addr += 2)
+  {
+    *hword = getreg16(addr);
+  }
+
+  // modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
+
+#if defined(CONFIG_STM32_FLASH_WORKAROUND_DATA_CACHE_CORRUPTION_ON_RWW)
+  data_cache_enable();
+#endif
+
+  sem_unlock();
+  return read;
+
+}
+
 #endif /* defined(CONFIG_STM32_STM32F20XX) || defined(CONFIG_STM32_STM32F4XXX) */

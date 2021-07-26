@@ -206,9 +206,78 @@
                            GPIO_OUTPUT_SET|GPIO_PORTG|GPIO_PIN6)
 #endif
 
+#if defined(CONFIG_DEV_GPIO) && !defined(CONFIG_GPIO_LOWER_HALF)
+
 /****************************************************************************
  * Public Types
  ****************************************************************************/
+
+#define BOARD_NGPIOIN   0 /* Amount of GPIO Input pins */
+#define GPIO_IN1 (GPIO_INPUT|GPIO_PUSHPULL|GPIO_PORTE|GPIO_PIN1)
+
+
+#define BOARD_NGPIOINT  0  /* Amount of GPIO Input w/ Interruption pins */
+#define GPIO_INT1 (GPIO_INPUT|GPIO_PUSHPULL|GPIO_PORTE|GPIO_PIN2)
+
+#define BOARD_NGPIOOUT  8 /* Amount of GPIO Output pins */
+#define GPIO_OUT1 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN8)
+#define GPIO_OUT2 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN9)
+#define GPIO_OUT3 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN10)                  
+#define GPIO_OUT4 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN11)                  
+#define GPIO_OUT5 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN12)                  
+#define GPIO_OUT6 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN13)                  
+#define GPIO_OUT7 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN14)                  
+#define GPIO_OUT8 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
+                  GPIO_OUTPUT_CLEAR|GPIO_PORTE|GPIO_PIN15)                  
+
+#endif
+
+/* PWM Configuration */
+#ifdef CONFIG_PWM
+
+#define STM32E407_PWMTIMER   1
+#define STM32E407_PWMCHANNEL 1
+
+
+/****************************************************************************
+ * Name: stm32_pwm_setup
+ *
+ * Description:
+ *   Initialize PWM and register the PWM device.
+ *
+ ****************************************************************************/
+int stm32_pwm_setup(void);
+
+#endif
+
+
+/****************************************************************************
+* Name: stm32_gpio_initialize
+*
+* Description:
+*
+Initialize GPIO drivers for use with /apps/examples/gpio
+*
+****************************************************************************/
+#ifdef CONFIG_DEV_GPIO
+int stm32_gpio_initialize(void);
+#endif
+
+
+#ifdef CONFIG_FS_SMARTFS
+int stm32_smartfs_initialize(void);
+#endif
+
+#ifdef CONFIG_FS_NXFFS
+int stm32_mtd_nxffsmount(void);
+#endif
 
 /****************************************************************************
  * Public Data

@@ -1,5 +1,5 @@
 /****************************************************************************
- * boards/arm/stm32/olimex-stm32-e407/src/stm32_userleds.c
+ * boards/arm/stm32/stm32f103-minimum/src/stm32_pwm.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,71 +24,102 @@
 
 #include <nuttx/config.h>
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <debug.h>
+
+#include <nuttx/board.h>
+#include <nuttx/timers/pwm.h>
+
 #include <arch/board/board.h>
-#include <nuttx/power/pm.h>
 
 #include "chip.h"
 #include "arm_arch.h"
-#include "arm_internal.h"
-#include "stm32.h"
+#include "stm32_pwm.h"
 #include "olimex-stm32-e407.h"
-
-#ifndef CONFIG_ARCH_LEDS
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
+/* Configuration ************************************************************/
 
-/* This array maps an LED number to GPIO pin configuration */
+/* PWM
+ *
+ * The stm32f103-minimum has no real on-board PWM devices, but the board can
+ * be configured to output a pulse train using TIM4 CH2.
+ * This pin is used by FSMC is connect to CN5 just for this purpose:
+ *
+ * PB0 ADC12_IN8/TIM3_CH3
+ *
+ */
 
-static uint32_t g_ledcfg[BOARD_NLEDS] =
-{
-  GPIO_LED_STATUS
-};
+#define HAVE_PWM 1
+
+#ifndef CONFIG_PWM
+#  undef HAVE_PWM
+#endif
+
+// #ifndef CONFIG_STM32_TIM2
+// #  undef HAVE_PWM
+// #endif
+
+// #ifndef CONFIG_STM32_TIM2_PWM
+// #  undef HAVE_PWM
+// #endif
+
+// #if (!defined(CONFIG_STM32_TIM1_CHANNEL) || CONFIG_STM32_TIM1_CHANNEL != STM32E407_PWMCHANNEL)
+// #  undef HAVE_PWM
+// #endif
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: board_userled_initialize
+ * Name: stm32_pwm_setup
+ *
+ * Description:
+ *   Initialize PWM and register the PWM device.
+ *
  ****************************************************************************/
 
-uint32_t board_userled_initialize(void)
+int stm32_pwm_setup(void)
 {
-  /* Configure LED1-4 GPIOs for output */
+#ifdef HAVE_PWM
+  static bool initialized = false;
+  struct pwm_lowerhalf_s *pwm;
+  int ret;
 
-  stm32_configgpio(GPIO_LED_STATUS);
-  return BOARD_NLEDS;
-}
+  /* Have we already initialized? */
 
-/****************************************************************************
- * Name: board_userled
- ****************************************************************************/
-
-void board_userled(int led, bool ledon)
-{
-  if ((unsigned)led < BOARD_NLEDS)
+  if (!initialized)
     {
-      stm32_gpiowrite(g_ledcfg[led], ledon);
+      /* Call stm32_pwminitialize() to get an instance of the PWM interface */
+
+      pwm = stm32_pwminitialize(STM32E407_PWMTIMER);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm0" */
+
+      ret = pwm_register("/dev/pwm0", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+
+      /* Now we are initialized */
+
+      initialized = true;
     }
+
+  return OK;
+#else
+  return -ENODEV;
+#endif
 }
-
-/****************************************************************************
- * Name: board_userled_all
- ****************************************************************************/
-
-void board_userled_all(uint32_t ledset)
-{
-  // stm32_gpiowrite(GPIO_LED_STATUS, (ledset & BOARD_LED1_BIT) != 0);
-  stm32_gpiowrite(GPIO_LED_STATUS, ledset);
-}
-
-#endif /* !CONFIG_ARCH_LEDS */

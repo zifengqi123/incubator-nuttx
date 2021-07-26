@@ -26,7 +26,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <debug.h>
+#include <syslog.h>
 #include <errno.h>
 
 #include <nuttx/board.h>
@@ -51,6 +51,18 @@
 #ifdef CONFIG_SENSORS_INA219
 #include "stm32_ina219.h"
 #endif
+
+#include <nuttx/mtd/mtd.h>
+#include <nuttx/fs/fs.h>
+#include <nuttx/fs/nxffs.h>
+#include <nuttx/kmalloc.h>
+
+#include <sys/boardctl.h>
+#include <string.h>
+#include <sys/mount.h>
+#include <nuttx/drivers/ramdisk.h>
+
+
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -125,14 +137,14 @@ static void stm32_i2c_register(int bus)
   i2c = stm32_i2cbus_initialize(bus);
   if (i2c == NULL)
     {
-      _err("ERROR: Failed to get I2C%d interface\n", bus);
+      syslog(LOG_ERR, "ERROR: Failed to get I2C%d interface\n", bus);
     }
   else
     {
       ret = i2c_register(i2c, bus);
       if (ret < 0)
         {
-          _err("ERROR: Failed to register I2C%d driver: %d\n", bus, ret);
+          syslog(LOG_ERR, "ERROR: Failed to register I2C%d driver: %d\n", bus, ret);
           stm32_i2cbus_uninitialize(i2c);
         }
     }
@@ -167,7 +179,42 @@ static void stm32_i2ctool(void)
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
+#ifdef CONFIG_RAMMTD
 
+int stm32_mtd_nxffsmount(void)
+{
+    uint32_t ramsize = CONFIG_RAMMTD_ERASESIZE;
+    FAR uint8_t *ramstart;
+    int ret = 0;
+
+    ramstart = (FAR uint8_t *)kmm_malloc(ramsize);
+    FAR struct mtd_dev_s *mtd = rammtd_initialize(ramstart, ramsize);
+    if (!mtd)
+    {
+        syslog(LOG_ERR, "ERROR: Failed to create RAM MTD instance\n");
+    }
+    
+#ifdef CONFIG_FS_NXFFS
+
+    /* Initialize to provide NXFFS on an MTD interface */
+    ret = nxffs_initialize(mtd);
+    if (ret < 0)
+    {
+        syslog(LOG_ERR, "ERROR: NXFFS initialization failed: %d\n", -ret);
+    }
+
+    /* Mount the file system */
+
+    ret = mount(NULL, "/mnt/nxffs", "nxffs", 0, NULL);
+    if (ret < 0)
+    {
+        syslog(LOG_ERR, "ERROR: Failed to mount the NXFFS volume: %d\n", errno);
+    }
+#endif
+
+    return ret;
+}
+#endif
 /****************************************************************************
  * Name: stm32_bringup
  *
@@ -199,6 +246,36 @@ int stm32_bringup(void)
       syslog(LOG_ERR, "ERROR: stm32_can_setup failed: %d\n", ret);
     }
 #endif
+
+#ifdef CONFIG_DEV_GPIO
+  ret = stm32_gpio_initialize();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "Failed to initialize GPIO Driver: %d\n", ret);
+      return ret;
+    }
+#endif
+
+#ifdef CONFIG_USERLED
+  /* Register the LED driver */
+
+  ret = userled_lower_initialize("/dev/userleds");
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: userled_lower_initialize() failed: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_PWM
+  /* Initialize PWM and register the PWM device. */
+
+  ret = stm32_pwm_setup();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: stm32_pwm_setup() failed: %d\n", ret);
+    }
+#endif
+
 
 #ifdef HAVE_USBHOST
   /* Initialize USB host operation.  stm32_usbhost_initialize() starts a
@@ -279,6 +356,44 @@ int stm32_bringup(void)
     }
 #endif
 
+#ifdef CONFIG_FS_PROCFS
+  /* Mount the procfs file system */
+
+  ret = nx_mount(NULL, STM32_PROCFS_MOUNTPOINT, "procfs", 0, NULL);
+  if (ret < 0)
+  {
+    syslog(LOG_ERR, "ERROR: Failed to mount procfs at %s: %d\n",
+            STM32_PROCFS_MOUNTPOINT, ret);
+  }
+#endif
+
+
+#ifdef CONFIG_FS_NXFFS
+  stm32_mtd_nxffsmount();
+#endif
+
+
+#ifdef CONFIG_FS_SMARTFS
+  /* Initialize Smart File System (SMARTFS) */
+  
+  ret = stm32_smartfs_initialize();
+  syslog(LOG_ERR, "stm32_smartfs_initialize ret:  %d\n", ret);
+
+  if (ret < 0)
+  {
+    syslog(LOG_ERR, "ERROR: Failed to init smartfs  %d\n", ret);
+  }
+
+  /* Mount the file system at /mnt/nvm */
+
+  // ret = nx_mount("/dev/smart0", "/mnt/nvm", "smartfs", 0, NULL);
+  // if (ret < 0)
+  //   {
+  //     syslog(LOG_ERR, "ERROR: Failed to mount the SmartFS volume: %d\n", ret);
+  //     return ret;
+  //   }
+#endif
+
   UNUSED(ret);
-  return OK;
+  return 0;
 }
