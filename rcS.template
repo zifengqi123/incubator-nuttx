@@ -1,0 +1,8 @@
+# Create a RAMDISK and mount it at XXXRDMOUNTPOINTXXX
+
+echo "application start ..."
+appstart &
+
+#mkrd -m XXXMKRDMINORXXX -s XXMKRDSECTORSIZEXXX XXMKRDBLOCKSXXX
+#mkfatfs /dev/ramXXXMKRDMINORXXX
+#mount -t vfat /dev/ramXXXMKRDMINORXXX XXXRDMOUNTPOINTXXX

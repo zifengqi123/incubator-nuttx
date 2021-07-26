@@ -1,0 +1,1 @@
+{ "ledcontrol", 100, 4096, ledcontrol_main },

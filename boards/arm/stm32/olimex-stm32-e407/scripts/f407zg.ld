@@ -45,6 +45,7 @@ SECTIONS
     .text : {
         _stext = ABSOLUTE(.);
         *(.vectors)
+        . = 0x00010000;
         *(.text .text.*)
         *(.fixup)
         *(.gnu.warning)

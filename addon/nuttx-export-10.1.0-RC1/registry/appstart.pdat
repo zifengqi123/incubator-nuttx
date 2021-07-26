@@ -1,0 +1,1 @@
+int appstart_main(int argc, char *argv[]);
