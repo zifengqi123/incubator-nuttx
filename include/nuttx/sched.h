@@ -107,7 +107,8 @@
 #define TCB_FLAG_SIGNAL_ACTION     (1 << 9)                      /* Bit 8: In a signal handler */
 #define TCB_FLAG_SYSCALL           (1 << 10)                     /* Bit 9: In a system call */
 #define TCB_FLAG_EXIT_PROCESSING   (1 << 11)                     /* Bit 10: Exitting */
-                                                                 /* Bits 11-15: Available */
+#define TCB_FLAG_FREE_STACK        (1 << 12)                     /* Bit 12: Free stack after exit */
+                                                                 /* Bits 13-15: Available */
 
 /* Values for struct task_group tg_flags */
 
@@ -347,27 +348,6 @@ struct pthread_cleanup_s
 };
 #endif
 
-/* type tls_ndxset_t & tls_dtor_t *******************************************/
-
-/* Smallest addressable type that can hold the entire configured number of
- * TLS data indexes.
- */
-
-#if CONFIG_TLS_NELEM > 0
-#  if CONFIG_TLS_NELEM > 32
-#    error Too many TLS elements
-#  elif CONFIG_TLS_NELEM > 16
-     typedef uint32_t tls_ndxset_t;
-#  elif CONFIG_TLS_NELEM > 8
-     typedef uint16_t tls_ndxset_t;
-#  else
-     typedef uint8_t tls_ndxset_t;
-#  endif
-
-typedef CODE void (*tls_dtor_t)(FAR void *);
-
-#endif
-
 /* struct dspace_s **********************************************************/
 
 /* This structure describes a reference counted D-Space region.
@@ -428,6 +408,8 @@ struct exitinfo_s
   FAR void *arg;
 #endif
 };
+
+struct task_info_s;
 
 /* struct task_group_s ******************************************************/
 
@@ -532,11 +514,7 @@ struct task_group_s
 
   /* Thread local storage ***************************************************/
 
-#if CONFIG_TLS_NELEM > 0
-  tls_ndxset_t tg_tlsset;                   /* Set of TLS indexes allocated */
-
-  tls_dtor_t  tg_tlsdestr[CONFIG_TLS_NELEM];  /* List of TLS destructors    */
-#endif
+  FAR struct task_info_s *tg_info;
 
   /* POSIX Signal Control Fields ********************************************/
 
@@ -706,6 +684,8 @@ struct tcb_s
   uint32_t premp_max;                    /* Max time preemption disabled        */
   uint32_t crit_start;                   /* Time critical section entered       */
   uint32_t crit_max;                     /* Max time in critical section        */
+  uint32_t run_start;                    /* Time when thread begin run          */
+  uint32_t run_max;                      /* Max time thread run                 */
 #endif
 
   /* State save areas *******************************************************/

@@ -247,6 +247,7 @@ SYSCALL_LOOKUP(fstat,                      2)
 SYSCALL_LOOKUP(statfs,                     2)
 SYSCALL_LOOKUP(fstatfs,                    2)
 SYSCALL_LOOKUP(telldir,                    1)
+SYSCALL_LOOKUP(sendfile,                   4)
 
 #if defined(CONFIG_FS_RAMMAP)
   SYSCALL_LOOKUP(munmap,                   2)
@@ -270,10 +271,6 @@ SYSCALL_LOOKUP(telldir,                    1)
   SYSCALL_LOOKUP(nxsched_get_streams,      0)
 #endif
 
-#ifdef CONFIG_NET_SENDFILE
-  SYSCALL_LOOKUP(sendfile,                 4)
-#endif
-
 #ifndef CONFIG_DISABLE_MOUNTPOINT
   SYSCALL_LOOKUP(mount,                    5)
   SYSCALL_LOOKUP(fsync,                    1)
@@ -292,14 +289,6 @@ SYSCALL_LOOKUP(telldir,                    1)
   SYSCALL_LOOKUP(shmat,                    3)
   SYSCALL_LOOKUP(shmctl,                   3)
   SYSCALL_LOOKUP(shmdt,                    1)
-#endif
-
-#if CONFIG_TLS_NELEM > 0
-  SYSCALL_LOOKUP(tls_alloc,                0)
-  SYSCALL_LOOKUP(tls_free,                 1)
-  SYSCALL_LOOKUP(tls_get_set,              1)
-  SYSCALL_LOOKUP(tls_get_dtor,             1)
-  SYSCALL_LOOKUP(tls_set_dtor,             2)
 #endif
 
 /* The following are defined if pthreads are enabled */

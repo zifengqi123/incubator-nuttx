@@ -145,7 +145,7 @@
 /* Clocking *****************************************************************/
 
 /* The board.h file may choose a different clock source for QUADSPI
- * peripherial by defining the BOARD_QSPI_CLK macro to one of the
+ * peripheral by defining the BOARD_QSPI_CLK macro to one of the
  * RCC_D1CCIPR_QSPISEL_XXX values (XXX = HCLK, PLL1, PLL2, PER).
  * QUADSPI clock defaults to HCLK.
  */
@@ -2147,7 +2147,7 @@ static int qspi_command(struct qspi_dev_s *dev,
        * info
        */
 
-      qspi_ccrconfig(priv, &xctn, CCR_FMODE_INDRD);
+      qspi_ccrconfig(priv, &xctn, CCR_FMODE_INDWR);
     }
 
   /* Wait for the interrupt routine to finish it's magic */

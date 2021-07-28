@@ -204,7 +204,7 @@ int up_create_stack(FAR struct tcb_s *tcb, size_t stack_size, uint8_t ttype)
 
       /* Save the adjusted stack values in the struct tcb_s */
 
-      tcb->stack_base_ptr  = tcb->stack_alloc_ptr;
+      tcb->stack_base_ptr = tcb->stack_alloc_ptr;
       tcb->adj_stack_size = size_of_stack;
 
 #ifdef CONFIG_STACK_COLORATION
@@ -216,6 +216,7 @@ int up_create_stack(FAR struct tcb_s *tcb, size_t stack_size, uint8_t ttype)
       riscv_stack_color(tcb->stack_base_ptr, tcb->adj_stack_size);
 
 #endif /* CONFIG_STACK_COLORATION */
+      tcb->flags |= TCB_FLAG_FREE_STACK;
 
       board_autoled_on(LED_STACKCREATED);
       return OK;
@@ -238,7 +239,8 @@ void riscv_stack_color(FAR void *stackbase, size_t nbytes)
   /* Take extra care that we do not write outsize the stack boundaries */
 
   uint32_t *stkptr = (uint32_t *)(((uintptr_t)stackbase + 3) & ~3);
-  uintptr_t stkend = (((uintptr_t)stackbase + nbytes) & ~3);
+  uintptr_t stkend = nbytes ? (((uintptr_t)stackbase + nbytes) & ~3):
+                     up_getsp(); /* 0: colorize the running stack */
   size_t    nwords = (stkend - (uintptr_t)stackbase) >> 2;
 
   /* Set the entire stack to the coloration value */

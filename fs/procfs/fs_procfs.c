@@ -279,9 +279,9 @@ struct procfs_level0_s
 
   /* Our private data */
 
-  uint8_t lastlen;                   /* length of last reported static dir */
-  pid_t pid[CONFIG_MAX_TASKS];       /* Snapshot of all active task IDs */
-  FAR const char *lastread;          /* Pointer to last static dir read */
+  uint8_t lastlen;                       /* length of last reported static dir */
+  pid_t pid[CONFIG_FS_PROCFS_MAX_TASKS]; /* Snapshot of all active task IDs */
+  FAR const char *lastread;              /* Pointer to last static dir read */
 };
 
 /* Level 1 is an internal virtual directory (such as /proc/fs) which
@@ -321,7 +321,10 @@ static void procfs_enum(FAR struct tcb_s *tcb, FAR void *arg)
   /* Add the PID to the list */
 
   index = dir->base.nentries;
-  DEBUGASSERT(index < CONFIG_MAX_TASKS);
+  if (index >= CONFIG_FS_PROCFS_MAX_TASKS)
+    {
+      return;
+    }
 
   dir->pid[index] = tcb->pid;
   dir->base.nentries = index + 1;
@@ -830,7 +833,7 @@ static int procfs_readdir(struct inode *mountpt, struct fs_dirent_s *dir)
           /* Save the filename=pid and file type=directory */
 
           dir->fd_dir.d_type = DTYPE_DIRECTORY;
-          snprintf(dir->fd_dir.d_name, NAME_MAX + 1, "%d", (int)pid);
+          procfs_snprintf(dir->fd_dir.d_name, NAME_MAX + 1, "%d", (int)pid);
 
           /* Set up the next directory entry offset.  NOTE that we could use
            * the standard f_pos instead of our own private index.

@@ -684,7 +684,7 @@ static struct stm32_pwmchan_s g_pwm1channels[] =
       .in_use  = 1,
       .pol     = CONFIG_STM32_TIM1_CH5POL,
       .idle    = CONFIG_STM32_TIM1_CH5IDLE,
-      .pincfg  = 0,    /* No available externaly */
+      .pincfg  = 0,    /* Not available externally */
     }
 #endif
   },
@@ -699,7 +699,7 @@ static struct stm32_pwmchan_s g_pwm1channels[] =
       .in_use  = 1,
       .pol     = CONFIG_STM32_TIM1_CH6POL,
       .idle    = CONFIG_STM32_TIM1_CH6IDLE,
-      .pincfg  = 0,    /* No available externaly */
+      .pincfg  = 0,    /* Not available externally */
     }
 #endif
   }
@@ -1244,7 +1244,7 @@ static struct stm32_pwmchan_s g_pwm8channels[] =
       .in_use  = 1,
       .pol     = CONFIG_STM32_TIM8_CH5POL,
       .idle    = CONFIG_STM32_TIM8_CH5IDLE,
-      .pincfg  = 0,    /* No available externaly */
+      .pincfg  = 0,    /* Not available externally */
     }
 #endif
   },
@@ -1259,7 +1259,7 @@ static struct stm32_pwmchan_s g_pwm8channels[] =
       .in_use  = 1,
       .pol     = CONFIG_STM32_TIM8_CH6POL,
       .idle    = CONFIG_STM32_TIM8_CH6IDLE,
-      .pincfg  = 0,    /* No available externaly */
+      .pincfg  = 0,    /* Not available externally */
     }
 #endif
   }
@@ -3645,6 +3645,13 @@ static int pwm_duty_channels_update(FAR struct pwm_lowerhalf_s *dev,
 #endif
     {
 #ifdef CONFIG_PWM_MULTICHAN
+      /* Break the loop if all following channels are not configured */
+
+      if (info->channels[i].channel == -1)
+        {
+          break;
+        }
+
       duty    = info->channels[i].duty;
       channel = info->channels[i].channel;
 
@@ -4390,6 +4397,13 @@ static int pwm_start(FAR struct pwm_lowerhalf_s *dev,
 
       for (i = 0; ret == OK && i < CONFIG_PWM_NCHANNELS; i++)
         {
+          /* Break the loop if all following channels are not configured */
+
+          if (info->channels[i].channel == -1)
+            {
+              break;
+            }
+
           /* Set output if channel configured */
 
           if (info->channels[i].channel != 0)

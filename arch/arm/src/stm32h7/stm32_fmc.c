@@ -91,7 +91,7 @@
  * BOARD_FMC_SDCR[1..2] - Initial value for SDRAM control registers for SDRAM
  *      bank 1-2. Note that some bits in SDCR1 influence both SDRAM banks and
  *      are unused in SDCR2!
- * BOARD_FMC_SDTR[1..2] - Initial value for SDRAM timing registeres for SDRAM
+ * BOARD_FMC_SDTR[1..2] - Initial value for SDRAM timing registers for SDRAM
  *      bank 1-2. Note that some bits in SDTR1 influence both SDRAM banks and
  *      are unused in SDTR2!
  * BOARD_FMC_SDRAM_REFR_PERIOD - The SDRAM refresh rate period in FMC clocks,
@@ -236,7 +236,7 @@ static int stm32_fmc_sdram_wait(unsigned timeout);
  * Name: stm32_fmc_init
  *
  * Description:
- *   Initialize the FMC peripherial. Because FMC initialization is highly
+ *   Initialize the FMC peripheral. Because FMC initialization is highly
  *   dependent on the used parts, definition of the initial values for FMC
  *   registers is mostly left to board designer.
  *
@@ -284,7 +284,7 @@ void stm32_fmc_init(void)
   modreg32(BOARD_FMC_SDTR2, FMC_SDTR_MASK, STM32_FMC_SDTR2);
 #endif
 
-  /* Enable the FMC peripherial */
+  /* Enable the FMC peripheral */
 
   modreg32(FMC_BCR_FMCEN, FMC_BCR_FMCEN, STM32_FMC_BCR1);
 

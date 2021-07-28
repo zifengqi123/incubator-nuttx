@@ -47,7 +47,7 @@ menuconfig 16550_UART
 	default n
 
 if 16550_UART
-source drivers/serial/Kconfig-16550
+source "drivers/serial/Kconfig-16550"
 endif
 
 #
@@ -172,6 +172,21 @@ config SERIAL_TERMIOS
 		Serial driver supports termios.h interfaces (tcsetattr, tcflush, etc.).
 		If this is not defined, then the terminal settings (baud, parity, etc).
 		are not configurable at runtime; serial streams cannot be flushed, etc..
+
+config TTY_FORCE_PANIC
+	bool "Enable TTY force crash"
+	default n
+	depends on DEBUG_FEATURES
+	---help---
+		This is for debugging system busyloop or deadlock, when the shell can't run,
+		then use this force crash the system to see the dumplog.
+
+config TTY_FORCE_PANIC_CHAR
+	hex "TTY force crash characters"
+	default 0x1F
+	depends on TTY_FORCE_PANIC
+	---help---
+		Use Ctrl-? 0x1F inputs to determine whether panic system
 
 config TTY_SIGINT
 	bool "Support SIGINT"
@@ -560,10 +575,10 @@ config UART_RXDMA
 
 endmenu
 
-source drivers/serial/Kconfig-uart
-source drivers/serial/Kconfig-lpuart
-source drivers/serial/Kconfig-usart
-source drivers/serial/Kconfig-sci
+source "drivers/serial/Kconfig-uart"
+source "drivers/serial/Kconfig-lpuart"
+source "drivers/serial/Kconfig-usart"
+source "drivers/serial/Kconfig-sci"
 
 menuconfig PSEUDOTERM
 	bool "Pseudo-Terminal (PTY) support"

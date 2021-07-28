@@ -38,6 +38,7 @@
 #include "esp32s2_region.h"
 #include "esp32s2_start.h"
 #include "esp32s2_lowputc.h"
+#include "esp32s2_wdt.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -78,11 +79,9 @@ void IRAM_ATTR __start(void)
   uint32_t regval;
   uint32_t sp;
 
-  /* Kill the watchdog timer */
+  /* Disable any wdt enabled by bootloader */
 
-  regval  = getreg32(RTC_CNTL_WDTCONFIG0_REG);
-  regval &= ~RTC_CNTL_WDT_FLASHBOOT_MOD_EN;
-  putreg32(regval, RTC_CNTL_WDTCONFIG0_REG);
+  esp32s2_wdt_early_deinit();
 
   regval  = getreg32(DR_REG_BB_BASE + 0x48); /* DR_REG_BB_BASE+48 */
   regval &= ~(1 << 14);
@@ -106,22 +105,6 @@ void IRAM_ATTR __start(void)
   /* Perform early serial initialization */
 
   xtensa_earlyserialinit();
-#endif
-
-#ifdef CONFIG_STACK_COLORATION
-    {
-      register uint32_t *ptr;
-      register int i;
-
-      /* If stack debug is enabled, then fill the stack with a recognizable
-       * value that we can use later to test for high water marks.
-       */
-
-      for (i = 0, ptr = g_idlestack;  i < IDLETHREAD_STACKWORDS; i++)
-        {
-          *ptr++ = STACK_COLOR;
-        }
-    }
 #endif
 
   /* Move the stack to a known location.  Although we were given a stack

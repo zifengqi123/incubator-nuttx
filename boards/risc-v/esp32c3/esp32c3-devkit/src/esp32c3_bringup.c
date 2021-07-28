@@ -55,6 +55,21 @@
 #endif
 
 #include "esp32c3_rtc.h"
+#ifdef CONFIG_ESP32C3_EFUSE
+#  include "esp32c3_efuse.h"
+#endif
+
+#ifdef CONFIG_ESP32C3_SHA_ACCELERATOR
+#  include "esp32c3_sha.h"
+#endif
+
+#ifdef CONFIG_RTC_DRIVER
+#  include "esp32c3_rtc_lowerhalf.h"
+#endif
+
+#ifdef CONFIG_ESP32C3_BLE
+#  include "esp32c3_ble.h"
+#endif
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -121,6 +136,23 @@ static int esp32c3_init_wifi_storage(void)
 int esp32c3_bringup(void)
 {
   int ret;
+
+#if defined(CONFIG_ESP32C3_EFUSE)
+  ret = esp32c3_efuse_initialize("/dev/efuse");
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to init EFUSE: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_ESP32C3_SHA_ACCELERATOR
+  ret = esp32c3_sha_init();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR,
+             "ERROR: Failed to initialize SHA: %d\n", ret);
+    }
+#endif
 
 #ifdef CONFIG_FS_PROCFS
   /* Mount the procfs file system */
@@ -275,10 +307,31 @@ int esp32c3_bringup(void)
   if (ret < 0)
     {
       syslog(LOG_ERR, "Failed to initialize RT timer: %d\n", ret);
+      return ret;
     }
 #endif
 
 #ifdef CONFIG_ESP32C3_WIRELESS
+
+#ifdef CONFIG_ESP32C3_WIFI_BT_COEXIST
+  ret = esp32c3_wifi_bt_coexist_init();
+  if (ret)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize Wi-Fi and BT coexist\n");
+      return ret;
+    }
+#endif
+
+#ifdef CONFIG_ESP32C3_BLE
+  ret = esp32c3_ble_initialize();
+  if (ret)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize BLE\n");
+      return ret;
+    }
+#endif
+
+#ifdef CONFIG_ESP32C3_WIFI
 
 #ifdef CONFIG_ESP32C3_WIFI_SAVE_PARAM
   ret = esp32c3_init_wifi_storage();
@@ -311,6 +364,8 @@ int esp32c3_bringup(void)
 
 #endif
 
+#endif /* CONFIG_ESP32C3_WIRELESS */
+
 #ifdef CONFIG_ESP32C3_LEDC
   ret = esp32c3_pwm_setup();
   if (ret < 0)
@@ -327,6 +382,17 @@ int esp32c3_bringup(void)
       return ret;
     }
 #endif /* CONFIG_ESP32C3_ADC */
+
+#ifdef CONFIG_RTC_DRIVER
+  /* Instantiate the ESP32-C3 RTC driver */
+
+  ret = esp32c3_rtc_driverinit();
+  if (ret < 0)
+    {
+      syslog(LOG_ERR,
+             "ERROR: Failed to Instantiate the RTC driver: %d\n", ret);
+    }
+#endif
 
   /* If we got here then perhaps not all initialization was successful, but
    * at least enough succeeded to bring-up NSH with perhaps reduced

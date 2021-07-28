@@ -505,8 +505,8 @@ static int esp32_wdt_pre(FAR struct esp32_wdt_dev_s *dev, uint16_t pre)
  * Name: esp32_rtc_clk
  *
  * Description:
- * Check the RTC clock source and return the necessary cycles to complete
- * 1 ms. NOTE: TODO.
+ *   Check the RTC clock source and return the necessary cycles to complete
+ *   1 ms.
  *
  ****************************************************************************/
 
@@ -527,6 +527,10 @@ static uint16_t esp32_rtc_clk(FAR struct esp32_wdt_dev_s *dev)
   /* Get the slow_clk_rtc period in us in Q13.19 fixed point format */
 
   period_13q19 = esp32_rtc_clk_cal(slow_clk_rtc, SLOW_CLK_CAL_CYCLES);
+
+  /* Assert no error happened during the calibration */
+
+  DEBUGASSERT(period_13q19 != 0);
 
   /* Convert from Q13.19 format to float */
 
@@ -955,6 +959,24 @@ FAR struct esp32_wdt_dev_s *esp32_wdt_init(uint8_t wdt_id)
 
   errout:
     return (FAR struct esp32_wdt_dev_s *)wdt;
+}
+
+/****************************************************************************
+ * Name: esp32_wdt_early_deinit
+ *
+ * Description:
+ *   Disable the WDT(s) that was/were enabled by the bootloader.
+ *
+ ****************************************************************************/
+
+void esp32_wdt_early_deinit(void)
+{
+  uint32_t regval;
+  putreg32(RTC_CNTL_WDT_WKEY_VALUE, RTC_CNTL_WDTWPROTECT_REG);
+  regval  = getreg32(RTC_CNTL_WDTCONFIG0_REG);
+  regval &= ~RTC_CNTL_WDT_EN;
+  putreg32(regval, RTC_CNTL_WDTCONFIG0_REG);
+  putreg32(0, RTC_CNTL_WDTWPROTECT_REG);
 }
 
 /****************************************************************************
