@@ -9,10 +9,10 @@
 #include "led_ctrl_elf.h"
 
 
-#define _APP_VER_       "V0.0.3"
+#define _APP_VER_       "V0.0.8"
 
-#define _flog   printf
-// #define _flog   _none
+#define _flog(format, ...)   do { if (1) syslog(LOG_WARNING, format, ##__VA_ARGS__); } while (0)
+// #define _flog   printf
 
 
 // 6.8~11.2v
@@ -43,7 +43,7 @@ int getLocalParam()
         sprintf(lac_sn, "%s", csn);
       }
     }
-    if(json != NULL) cJSON_free(json);
+    if(json != NULL) cJSON_Delete(json);
   }
 
 
@@ -81,7 +81,7 @@ int getLocalParam()
       }
     }
 
-    if(json != NULL) cJSON_free(json);
+    if(json != NULL) cJSON_Delete(json);
 
   }
 
@@ -166,7 +166,7 @@ void parseStatus(cJSON* sts)
 
     int index = 0;
     bool ison = false;
-    int level = 0;
+    double level = 0;
 
     cJSON *item = cJSON_GetObjectItem(ix, "index");
     index = item->valueint;
@@ -177,7 +177,7 @@ void parseStatus(cJSON* sts)
     }
 
     item = cJSON_GetObjectItem(ix, "level");
-    level = item->valueint;
+    level = item->valuedouble;
 
     if (index > 0 && index < 9)
     {
@@ -196,7 +196,7 @@ void parseStatus(cJSON* sts)
         ledstatus->isOn = newLedStatus->isOn;
         ledstatus->level = newLedStatus->level;
         // _flog("Is change: %s %d\n", v2, level);
-        _flog("Is change: %d, %d, %d, %d\n", index, ison, level, newLedStatus->isChange);
+        _flog("Is change: %d, %d, %f, %d\n", index, ison, level, newLedStatus->isChange);
       }
     }
   }
@@ -264,38 +264,6 @@ void parseUpdate(cJSON* update)
 
 }
 
-int unPackStatus(cJSON * json)
-{
-    char *out;
-
-    out = cJSON_Print(json);
-    // _flog("%s\n", out);
-
-    cJSON *sts = cJSON_GetObjectItem(json, "led_status");
-    if(sts != NULL)
-    {
-      parseStatus(sts);
-    }
-
-    cJSON *update = cJSON_GetObjectItem(json, "update");
-    if(update != NULL)
-    {
-      parseUpdate(update);
-    }
-
-    if(out != NULL)
-    {
-      free(out);
-    }
-
-    if(json != NULL)
-    {
-      cJSON_Delete(json);
-      json = NULL;      
-    }
-
-    return 0;
-}
 
 void pth_mdns_callback()
 {
@@ -313,8 +281,67 @@ void pth_mdns_callback()
             _flog("MDNS IP: %s  Port: %d\n", ip, port);
         }
     }
-
 }
+
+int unPackStatus(cJSON * json)
+{
+    char *out;
+    int server_type;
+    int ret = 0;
+    pthread_t p_mdns;
+
+    out = cJSON_Print(json);
+    _flog("%s\n", out);
+
+    cJSON *item = cJSON_GetObjectItem(json, "server_type");
+    if(item != NULL)
+    {
+      server_type = item->valueint;
+      _flog("---server_type: %d\n", server_type);
+      if(server_type == 1 && hasMDNS == true)
+      {
+          sprintf(url_path, "%s", net_url);
+          hasMDNS = false;
+          _flog("set server url 1: %s\n", url_path);
+      }
+      else if(server_type == 2 && hasMDNS == false)
+      {
+          ret = pthread_create(&p_mdns, NULL, pth_mdns_callback, NULL);
+          if (ret != 0)
+          {
+              _flog("thread create p_mdns fail!!!\n");
+          }
+          pthread_join(p_mdns, NULL);
+          _flog("set server url 2: %s\n", url_path);
+      }
+    }
+
+    cJSON *sts = cJSON_GetObjectItem(json, "led_status");
+    if(sts != NULL)
+    {
+      parseStatus(sts);
+    }
+
+    cJSON *update = cJSON_GetObjectItem(json, "update");
+    if(update != NULL)
+    {
+      parseUpdate(update);
+    }
+
+    if(out != NULL)
+    {
+      cJSON_free(out);
+    }
+
+    if(json != NULL)
+    {
+      cJSON_Delete(json);
+      json = NULL;      
+    }
+
+    return 0;
+}
+
 
 void pth_url_callback()
 {
@@ -328,7 +355,7 @@ void pth_url_callback()
         cJSON *out = NULL;
         ret = onLedStatus(url_path, in);
 
-        _flog("-onLedStatus ret: %d\n", ret);
+        _flog("-onLedStatus ret: %s %d\n", url_path, ret);
     
         if(ret == -111 || ret == -116) 
         {
@@ -421,8 +448,11 @@ int main(int argc, FAR char *argv[])
     int status;
     pthread_t p_mdns;
 
+    sleep(5);
+
     getLocalParam();
 
+    hasMDNS = false;
     sprintf(url_path, "%s", net_url);
     
     syslog(LOG_WARNING, "----addon LED CONTROL app started!---\n");
