@@ -101,7 +101,7 @@
 
 /* Supported ADC modes:
  *   - SW triggering with/without DMA transfer
- *   - TIM triggering with/without DMA tranfer
+ *   - TIM triggering with/without DMA transfer
  *   - external triggering with/without DMA transfer
  *
  * (tested with ADC example app from NuttX apps repo).
@@ -3870,6 +3870,14 @@ static int adc_ioctl(FAR struct adc_dev_s *dev, int cmd, unsigned long arg)
 
           break;
         }
+
+      case ANIOC_GET_NCHANNELS:
+        {
+          /* Return the number of configured channels */
+
+          ret = priv->rnchannels;
+        }
+        break;
 
       case IO_TRIGGER_REG:
         {

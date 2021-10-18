@@ -46,26 +46,6 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: local_generate_instance_id
- ****************************************************************************/
-
-static int32_t local_generate_instance_id(void)
-{
-  static int32_t g_next_instance_id = 0;
-  int32_t id;
-
-  /* Called from local_connect with net_lock held. */
-
-  id = g_next_instance_id++;
-  if (g_next_instance_id < 0)
-    {
-      g_next_instance_id = 0;
-    }
-
-  return id;
-}
-
-/****************************************************************************
  * Name: _local_semtake() and _local_semgive()
  *
  * Description:
@@ -217,6 +197,30 @@ errout_with_fifos:
  ****************************************************************************/
 
 /****************************************************************************
+ * Name: local_generate_instance_id
+ *
+ * Description:
+ *   Generate instance ID for stream
+ *
+ ****************************************************************************/
+
+int32_t local_generate_instance_id(void)
+{
+  static int32_t g_next_instance_id = 0;
+  int32_t id;
+
+  /* Called from local_connect with net_lock held. */
+
+  id = g_next_instance_id++;
+  if (g_next_instance_id < 0)
+    {
+      g_next_instance_id = 0;
+    }
+
+  return id;
+}
+
+/****************************************************************************
  * Name: psock_local_connect
  *
  * Description:
@@ -242,7 +246,7 @@ int psock_local_connect(FAR struct socket *psock,
 {
   FAR struct local_conn_s *client;
   FAR struct sockaddr_un *unaddr = (FAR struct sockaddr_un *)addr;
-  FAR struct local_conn_s *conn;
+  FAR struct local_conn_s *conn = NULL;
 
   DEBUGASSERT(psock && psock->s_conn);
   client = (FAR struct local_conn_s *)psock->s_conn;
@@ -256,9 +260,7 @@ int psock_local_connect(FAR struct socket *psock,
   /* Find the matching server connection */
 
   net_lock();
-  for (conn = (FAR struct local_conn_s *)g_local_listeners.head;
-      conn;
-      conn = (FAR struct local_conn_s *)dq_next(&conn->lc_node))
+  while ((conn = local_nextconn(conn)) != NULL)
     {
       /* Anything in the listener list should be a stream socket in the
        * listening state

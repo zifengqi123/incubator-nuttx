@@ -40,7 +40,6 @@ endif # PM
 config ESP32C3_DEVKIT_RUN_IRAM
 	bool "Run from IRAM"
 	default n
-	---help---
 
 choice
   prompt "SPIFLASH File System"
@@ -64,6 +63,11 @@ choice
 	depends on FS_LITTLEFS
 
 endchoice
+
+config ESP32C3_SPIFLASH_FS_MOUNT_PT
+	string "File-system Mount Point"
+	depends on ESP32C3_SPIFLASH_LITTLEFS
+	default "/data"
 
 config ESP32C3_SPIFLASH_ENCRYPTION_TEST
 	bool "SPI Flash encryption test"

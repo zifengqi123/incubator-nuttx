@@ -335,7 +335,7 @@ static int littlefs_close(FAR struct file *filep)
 
   if (--priv->refs <= 0)
     {
-      lfs_file_close(&fs->lfs, &priv->file);
+      ret = lfs_file_close(&fs->lfs, &priv->file);
     }
 
   littlefs_semgive(fs);
@@ -344,7 +344,7 @@ static int littlefs_close(FAR struct file *filep)
       kmm_free(priv);
     }
 
-  return OK;
+  return ret;
 }
 
 /****************************************************************************
@@ -926,7 +926,7 @@ static int littlefs_sync_block(FAR const struct lfs_config *c)
 
   if (INODE_IS_MTD(drv))
     {
-      ret = MTD_IOCTL(drv->u.i_mtd, BIOC_FLUSH, 0);
+      ret = MTD_IOCTL(drv->u.i_mtd, MTDIOC_FLUSH, 0);
     }
   else
     {

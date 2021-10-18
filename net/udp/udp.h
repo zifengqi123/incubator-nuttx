@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <queue.h>
 
+#include <nuttx/semaphore.h>
 #include <nuttx/net/ip.h>
 #include <nuttx/mm/iob.h>
 
@@ -119,6 +120,13 @@ struct udp_conn_s
 #ifdef CONFIG_NET_UDP_BINDTODEVICE
   uint8_t  boundto;       /* Index of the interface we are bound to.
                            * Unbound: 0, Bound: 1-MAX_IFINDEX */
+#endif
+#if CONFIG_NET_RECV_BUFSIZE > 0
+  int32_t  rcvbufs;       /* Maximum amount of bytes queued in recv */
+#endif
+#if CONFIG_NET_SEND_BUFSIZE > 0
+  int32_t  sndbufs;       /* Maximum amount of bytes queued in send */
+  sem_t    sndsem;        /* Semaphore signals send completion */
 #endif
 
   /* Read-ahead buffering.
@@ -868,6 +876,41 @@ int udp_txdrain(FAR struct socket *psock, unsigned int timeout);
 #else
 #  define udp_txdrain(conn, timeout) (0)
 #endif
+
+/****************************************************************************
+ * Name: udp_ioctl
+ *
+ * Description:
+ *   This function performs udp specific ioctl() operations.
+ *
+ * Parameters:
+ *   conn     The TCP connection of interest
+ *   cmd      The ioctl command
+ *   arg      The argument of the ioctl cmd
+ *   arglen   The length of 'arg'
+ *
+ ****************************************************************************/
+
+int udp_ioctl(FAR struct udp_conn_s *conn,
+              int cmd, FAR void *arg, size_t arglen);
+
+/****************************************************************************
+ * Name: udp_sendbuffer_notify
+ *
+ * Description:
+ *   Notify the send buffer semaphore
+ *
+ * Input Parameters:
+ *   conn - The UDP connection of interest
+ *
+ * Assumptions:
+ *   Called from user logic with the network locked.
+ *
+ ****************************************************************************/
+
+#if CONFIG_NET_SEND_BUFSIZE > 0
+void udp_sendbuffer_notify(FAR struct udp_conn_s *conn);
+#endif /* CONFIG_NET_SEND_BUFSIZE */
 
 #undef EXTERN
 #ifdef __cplusplus
