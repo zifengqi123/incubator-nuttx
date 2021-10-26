@@ -1,17 +1,17 @@
-include ../nuttx-export-10.1.0-RC1/scripts/Make.defs
+include ../nuttx-export-10.1.0/scripts/Make.defs
 
 # Long calls are need to call from RAM into FLASH
 
 # ARCHCFLAGS += -mlong-calls
 # ARCHWARNINGS = -Wall -Wstrict-prototypes -Wshadow -Wundef
 # ARCHOPTIMIZATION = -Os -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer
-# ARCHINCLUDES = -I. -isystem  ../nuttx-export-10.1.0-RC1/include
+# ARCHINCLUDES = -I. -isystem  ../nuttx-export-10.1.0/include
 
 
 ARCHCFLAGS += -mlong-calls
 ARCHWARNINGS = -Wall -Wstrict-prototypes -Wshadow -Wundef
 ARCHOPTIMIZATION = -Os -mcpu=cortex-m4 -mthumb -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer
-ARCHINCLUDES = -I. -isystem  ../nuttx-export-10.1.0-RC1/include/ -I../../../apps/include/ -I../../../apps/applications/ledcontrol
+ARCHINCLUDES = -I. -isystem  ../nuttx-export-10.1.0/include/ -I../../../apps/include/ -I../../../apps/applications/ledcontrol
 
 CFLAGS = $(ARCHCFLAGS) $(ARCHWARNINGS) $(ARCHOPTIMIZATION) $(ARCHINCLUDES) -pipe
 
@@ -51,8 +51,8 @@ all: $(BIN)
 $(OBJS): %$(OBJEXT): %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-System.map: ../nuttx-export-10.1.0-RC1/System.map
-	cat ../nuttx-export-10.1.0-RC1/System.map | sed -e "s/\r//g" >System.map
+System.map: ../nuttx-export-10.1.0/System.map
+	cat ../nuttx-export-10.1.0/System.map | sed -e "s/\r//g" >System.map
 
 $(REL): $(OBJS)
 	$(LD) $(LDRELFLAGS) -o $@ $<
